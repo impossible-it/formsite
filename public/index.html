@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SiteForm</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9fafb; padding: 2rem; }
+    form { max-width: 400px; margin: auto; background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    input, textarea, button { width: 100%; margin-bottom: 1rem; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
+    button { background: #007bff; color: white; border: none; cursor: pointer; }
+    button:hover { background: #0056b3; }
+  </style>
+</head>
+<body>
+  <form id="contactForm">
+    <h2>Свяжитесь с нами</h2>
+    <input type="text" name="name" placeholder="Ваше имя" required />
+    <input type="email" name="email" placeholder="Ваш Email" required />
+    <textarea name="message" placeholder="Сообщение..." required></textarea>
+    <button type="submit">Отправить</button>
+  </form>
+
+  <script>
+    document.getElementById("contactForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = {
+        name: e.target.name.value,
+        email: e.target.email.value,
+        message: e.target.message.value
+      };
+      const res = await fetch("/api/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+      const result = await res.json();
+      alert(result.success ? "Отправлено!" : "Ошибка отправки");
+    });
+  </script>
+</body>
+</html>
