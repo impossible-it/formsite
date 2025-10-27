@@ -6,20 +6,23 @@ type Props = { onContinue: () => void };
 
 const Welcome: React.FC<Props> = ({ onContinue }) => (
   <section className="relative min-h-[60vh] grid place-items-center bg-gradient-to-b from-blue-950 to-slate-950 text-slate-50 overflow-hidden">
-    {/* Фон-логотип без mask: как водяной знак */}
+    {/* Фон-логотип как <img> — самый надёжный вариант */}
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-0 flex items-center justify-center"
+      className="pointer-events-none absolute inset-0 grid place-items-center"
     >
-      <div
-        className="w-[90vmin] max-w-[720px] aspect-square"
-        style={{
-          backgroundImage: `url(${logoUrl})`,
-          backgroundRepeat: "no-repeat",
-          backgroundPosition: "center",
-          backgroundSize: "contain",
-          opacity: 0.6,
-          filter: "blur(0.2px)",
+      <img
+        src={logoUrl}
+        alt=""
+        className="
+          select-none pointer-events-none
+          opacity-60
+          w-[70vmin] max-w-[560px] md:max-w-[720px]
+        "
+        style={{ filter: "blur(0.2px)" }}
+        onError={(e) => {
+          // Если вдруг не загрузился (404/пути), не мешаем интерфейсу
+          (e.currentTarget as HTMLImageElement).style.display = "none";
         }}
       />
     </div>
