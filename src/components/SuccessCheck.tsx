@@ -14,11 +14,8 @@ const SuccessCheck: React.FC<Props> = ({
   const [showCheck, setShowCheck] = useState(false);
 
   return (
-    // 🟩 1. Общий фон страницы — просто тёмный, без огромных рамок
     <section className="flex items-center justify-center min-h-[30vh] bg-slate-950 text-slate-50 px-4">
-      {/* 🟨 2. Карточка с фоном-логотипом */}
       <div className="relative w-full max-w-md">
-        {/* фоновое лого позади карточки */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center"
