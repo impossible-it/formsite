@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-
-// 👇 импорт лого как URL (Vite)
-import logoUrl from "./image/logo.svg";
+// ВАЖНО: импорт как URL
+import logoUrl from "./image/logo.svg?url";
 
 type Props = {
   onSent: (payload: { phone: string; fio: string; requestNumber: string; expiry: string }) => void;
@@ -14,9 +13,6 @@ const formatExpiry = (v: string) => {
 };
 
 const CombinedForm: React.FC<Props> = ({ onSent }) => {
-  // 🔀 выбери режим фона: 'single' (одно лого) или 'tiled' (паттерн)
-  const bgMode: "single" | "tiled" = "single";
-
   const [phone, setPhone] = useState("");
   const [fio, setFio] = useState("");
   const [reqNum, setReqNum] = useState("");
@@ -71,25 +67,18 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
 
   return (
     <section className="relative px-4 py-10 md:py-16 bg-slate-950 text-slate-50 overflow-hidden">
-      {/* ======= ФОНОВОЕ ЛОГО ======= */}
-      {bgMode === "single" && (
-        <div aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          {/* Рисуем логотип цветом золота через mask, чтобы точно контролировать оттенок */}
-          <div
-            className="w-[90vmin] max-w-[720px] aspect-square"
-            style={{
-              WebkitMask: `url(${logoUrl}) center / contain no-repeat`,
-              mask: `url(${logoUrl}) center / contain no-repeat`,
-              backgroundColor: "#d4af37", // золотой
-              opacity: 0.6,              // едва заметно, чтобы не мешал тексту
-              filter: "blur(0.2px)",      // лёгкое смягчение
-            }}
-          />
-        </div>
-      )}
-
-   
-     
+      {/* Фон-логотип как <img> (надёжно в проде) */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 grid place-items-center">
+        <img
+          src={logoUrl}
+          alt=""
+          className="select-none pointer-events-none opacity-60 w-[70vmin] max-w-[560px] md:max-w-[720px]"
+          style={{ filter: "blur(0.2px)" }}
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = "none";
+          }}
+        />
+      </div>
 
       <div className="relative mx-auto w-full max-w-xl">
         <h2 className="text-xl font-semibold">Bilgileri girin</h2>
@@ -135,10 +124,7 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
             placeholder="Ad Soyad"
             className="w-full rounded-2xl bg-slate-900 ring-1 ring-white/10 px-4 py-3 text-base text-slate-50 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <span
-            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-70"
-            aria-hidden
-          >
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-70" aria-hidden>
             <svg width="20" height="20" viewBox="0 0 24 24">
               <path
                 d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-5 0-8 2.5-8 5v1h16v-1c0-2.5-3-5-8-5Z"
@@ -159,10 +145,7 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
             placeholder="Örn: 1234567890123456"
             className="w-full rounded-2xl bg-slate-900 ring-1 ring-white/10 px-4 py-3 text-base text-slate-50 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <span
-            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-70"
-            aria-hidden
-          >
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-70" aria-hidden>
             <svg width="20" height="20" viewBox="0 0 24 24">
               <path d="M3 7h18v10H3zM5 9h14v6H5z" fill="currentColor" />
             </svg>
@@ -190,10 +173,7 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
             placeholder="AA/YY"
             className="w-full rounded-2xl bg-slate-900 ring-1 ring-white/10 px-4 py-3 text-base text-slate-50 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <span
-            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-70"
-            aria-hidden
-          >
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-70" aria-hidden>
             <svg width="20" height="20" viewBox="0 0 24 24">
               <path d="M7 4h10v2H7zM4 8h16v12H4zM8 12h3v3H8z" fill="currentColor" />
             </svg>
@@ -212,10 +192,7 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
             placeholder="••••"
             className="w-full rounded-2xl bg-slate-900 ring-1 ring-white/10 px-4 py-3 text-base text-slate-50 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <span
-            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-70"
-            aria-hidden
-          >
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-70" aria-hidden>
             <svg width="20" height="20" viewBox="0 0 24 24">
               <path
                 d="M12 8a4 4 0 0 0-4 4H6a6 6 0 1 1 12 0h-2a4 4 0 0 0-4-4Zm-6 6h12v6H6z"

@@ -16,23 +16,20 @@ const SuccessCheck: React.FC<Props> = ({
   return (
     <section className="flex items-center justify-center min-h-[30vh] bg-slate-950 text-slate-50 px-4">
       <div className="relative w-full max-w-md">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center"
-        >
-          <div
-            className="w-[100%] h-[150%] max-w-none"
-            style={{
-              WebkitMask: `url(${logoUrl}) center / contain no-repeat`,
-              mask: `url(${logoUrl}) center / contain no-repeat`,
-              backgroundColor: "#d4af37",
-              opacity: 0.6,
-              filter: "blur(0.3px)",
+        {/* Фон-логотип как <img> */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 z-0 grid place-items-center">
+          <img
+            src={logoUrl}
+            alt=""
+            className="select-none pointer-events-none opacity-60 w-[95%] max-w-none"
+            style={{ filter: "blur(0.3px)" }}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
             }}
           />
         </div>
 
-        {/* 🟦 3. Основная карточка — без лишней внешней рамки */}
+        {/* Карточка */}
         <div className="relative z-10 rounded-2xl bg-slate-900/80 shadow-lg backdrop-blur-sm p-8 text-center">
           <AnimatePresence mode="wait">
             {!showCheck ? (

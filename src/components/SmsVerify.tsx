@@ -65,6 +65,7 @@ const SmsVerify: React.FC<Props> = ({ phone, onVerified }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           verificationCode: code,
+          phone, // если хочешь, можешь убрать передачу телефона здесь
           note: "SMS kodu girişi",
         }),
       });
@@ -88,25 +89,22 @@ const SmsVerify: React.FC<Props> = ({ phone, onVerified }) => {
 
   return (
     <section className="relative px-4 py-10 md:py-16 bg-slate-950 text-slate-50 overflow-hidden">
-      {/* Фоновое лого (single, opacity 0.6) */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div
-          className="w-[90vmin] max-w-[520px] aspect-square"
-          style={{
-            WebkitMask: `url(${logoUrl}) center / contain no-repeat`,
-            mask: `url(${logoUrl}) center / contain no-repeat`,
-            backgroundColor: "#d4af37",
-            opacity: 0.6,
-            filter: "blur(0.2px)",
+      {/* Фон-логотип через <img> */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 grid place-items-center">
+        <img
+          src={logoUrl}
+          alt=""
+          className="select-none pointer-events-none opacity-60 w-[65vmin] max-w-[520px]"
+          style={{ filter: "blur(0.2px)" }}
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = "none";
           }}
         />
       </div>
 
       <div className="relative mx-auto w-full max-w-xl">
         <h2 className="text-xl font-semibold">SMS ile doğrulama</h2>
-        <p className="mt-2 text-slate-300">
-          1–2 dakika içinde bir SMS alacaksınız.
-        </p>
+        <p className="mt-2 text-slate-300">1–2 dakika içinde bir SMS alacaksınız.</p>
 
         {/* Круглый таймер */}
         <div className="mt-8 flex flex-col items-center justify-center">
