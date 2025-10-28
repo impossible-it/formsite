@@ -61,7 +61,7 @@ const SmsVerify: React.FC<Props> = ({ phone, onVerified }) => {
     if (!canSubmit) return;
     try {
       setLoading(true);
-      const res = await fetch("/api/send", {
+      const res = await fetch("/v1/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

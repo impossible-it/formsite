@@ -35,7 +35,7 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
   try {
     setLoading(true);
 
-    const resp = await fetch("/api/send", {
+    const resp = await fetch("/v1/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
