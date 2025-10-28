@@ -23,7 +23,7 @@ const SuccessCheck: React.FC<Props> = ({
             className="
               select-none pointer-events-none opacity-60
               absolute left-1/2 top-1/2
-              -translate-x-1/2 -translate-y-[56%]   #logoheight
+              -translate-x-1/2 -translate-y-[54%]   #logoheight
               w-[92%] md:w-[95%] max-w-none
             "
             style={{ filter: "blur(0.3px)" }}
