@@ -28,7 +28,7 @@ const Welcome: React.FC<Props> = ({ onContinue }) => (
 
     <div className="relative w-full max-w-xl p-6 md:p-10 text-center">
       <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight drop-shadow-xl">
-        Sizi DIJITAL BROSA şirketi karşılıyor
+        Sizi DIJITAL BORSA şirketi karşılıyor
       </h1>
       <p className="mt-3 text-slate-300">
         Basit formu doldurun. 🔒 Verilerinizi şifreleme ve diğer güvenlik önlemleriyle koruyoruz. 🗝️
