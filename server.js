@@ -1,6 +1,13 @@
 // server.js (ESM)
+// 👇 заставляем Node предпочитать IPv4 (иначе может пытаться по IPv6 и виснуть)
+
 import dotenv from "dotenv";
 dotenv.config();
+import dns from "node:dns";
+dns.setDefaultResultOrder("ipv4first");
+
+
+
 
 import express from "express";
 import cors from "cors";
