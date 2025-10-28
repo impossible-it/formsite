@@ -16,16 +16,18 @@ const SuccessCheck: React.FC<Props> = ({
   return (
     <section className="flex items-center justify-center min-h-[30vh] bg-slate-950 text-slate-50 px-4">
       <div className="relative w-full max-w-md">
-        {/* Фон-логотип как <img> */}
-        <div aria-hidden className="pointer-events-none absolute inset-0 z-0 grid place-items-center">
+        <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
           <img
             src={logoUrl}
             alt=""
-            className="select-none pointer-events-none opacity-60 w-[95%] max-w-none"
+            className="
+              select-none pointer-events-none opacity-60
+              absolute left-1/2 top-1/2
+              -translate-x-1/2 -translate-y-[75%]   #logoheight
+              w-[92%] md:w-[95%] max-w-none
+            "
             style={{ filter: "blur(0.3px)" }}
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = "none";
-            }}
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
           />
         </div>
 

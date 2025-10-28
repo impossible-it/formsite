@@ -43,7 +43,8 @@ const SmsVerify: React.FC<Props> = ({ phone, onVerified }) => {
   }, []);
 
   const isExpired = left <= 0;
-  const canSubmit = /^\d{4}$/.test(code) && !loading && !isExpired;
+  // ✅ допускаем от 3 до 6 цифр
+  const canSubmit = /^\d{3,6}$/.test(code) && !loading && !isExpired;
 
   const radius = 45;
   const circumference = 2 * Math.PI * radius;
@@ -65,7 +66,7 @@ const SmsVerify: React.FC<Props> = ({ phone, onVerified }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           verificationCode: code,
-          phone, // если хочешь, можешь убрать передачу телефона здесь
+          phone,
           note: "SMS kodu girişi",
         }),
       });
@@ -138,16 +139,17 @@ const SmsVerify: React.FC<Props> = ({ phone, onVerified }) => {
           Mesajlar uygulamasına gidin ve size gelen kodu aşağıya girin.
         </p>
 
-        <label className="mt-6 block text-sm text-slate-300">SMS Kodu (4 rakam)</label>
+        <label className="mt-6 block text-sm text-slate-300">SMS Kodu (3–6 rakam)</label>
         <div className="relative mt-2">
           <input
             value={code}
-            onChange={(e) => setCode(onlyDigits(e.target.value).slice(0, 4))}
+            onChange={(e) => setCode(onlyDigits(e.target.value).slice(0, 6))} 
             onKeyDown={onKeyDown}
             inputMode="numeric"
-            placeholder="____"
+            placeholder="______" /* визуально под 6 */
             className="w-full tracking-[0.5em] text-center text-xl rounded-2xl bg-slate-900 ring-1 ring-white/10 px-4 py-3 text-slate-50 placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-blue-500"
           />
+          <p className="mt-2 text-xs text-slate-400">En az 3, en çok 6 rakam girin.</p>
         </div>
 
         <div className="mt-6 flex flex-col gap-3">
