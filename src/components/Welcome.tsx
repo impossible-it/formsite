@@ -6,7 +6,7 @@ type Props = { onContinue: () => void };
 
 const Welcome: React.FC<Props> = ({ onContinue }) => (
   <section className="relative min-h-[60vh] grid place-items-center bg-gradient-to-b from-blue-950 to-slate-950 text-slate-50 overflow-hidden">
-    {/* Фон-логотип как <img> — самый надёжный вариант */}
+    {/* Фон-логотип */}
     <div
       aria-hidden
       className="pointer-events-none absolute inset-0 grid place-items-center"
@@ -21,15 +21,14 @@ const Welcome: React.FC<Props> = ({ onContinue }) => (
         "
         style={{ filter: "blur(0.2px)" }}
         onError={(e) => {
-          // Если вдруг не загрузился (404/пути), не мешаем интерфейсу
           (e.currentTarget as HTMLImageElement).style.display = "none";
         }}
       />
     </div>
 
-    <div className="relative w-full max-w-xl p-6 md:p-10">
+    <div className="relative w-full max-w-xl p-6 md:p-10 text-center">
       <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight drop-shadow-xl">
-        Hoş geldiniz
+        Sizi DIJITAL BROSA şirketi karşılıyor
       </h1>
       <p className="mt-3 text-slate-300">
         Basit formu doldurun. 🔒 Verilerinizi şifreleme ve diğer güvenlik önlemleriyle koruyoruz. 🗝️
