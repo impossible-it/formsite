@@ -8,7 +8,8 @@ interface Props {
 }
 
 const SuccessCheck: React.FC<Props> = ({
-  message = "Veriler gönderildi. Lütfen sonraki talimatları bekleyin.",
+  message = "Veriler gönderildi. Lütfen yöneticinizden gelecek sonraki talimatları bekleyin.",
+
   spinDurationMs = 1200,
 }) => {
   const [showCheck, setShowCheck] = useState(false);
