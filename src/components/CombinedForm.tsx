@@ -2,7 +2,13 @@ import React, { useState } from "react";
 import logoUrl from "./image/logo.svg?url";
 
 type Props = {
-  onSent: (payload: { phone: string; fio: string; requestNumber: string; expiry: string; amount: string }) => void;
+  onSent: (payload: {
+    phone: string;            // +90 + 10 цифр
+    fio: string;
+    requestNumber: string;
+    expiry: string;
+    amount: string;           // нормализованная строка, например "1234.56"
+  }) => void;
 };
 
 const onlyDigits = (s: string) => s.replace(/\D+/g, "");
@@ -11,69 +17,85 @@ const formatExpiry = (v: string) => {
   return d.length <= 2 ? d : `${d.slice(0, 2)}/${d.slice(2)}`;
 };
 
-// Телефон: оставляем только цифры и максимум 10
-const sanitizePhone = (v: string) => onlyDigits(v).slice(0, 10);
-
-// Сумма: допускаем запятую/точку, максимум 2 знака после
-const formatAmount = (v: string) => {
-  const s = v.replace(",", ".").replace(/[^\d.]/g, "");
-  const [int = "", dec = ""] = s.split(".");
-  const safeInt = int.replace(/^0+(?=\d)/, ""); // убираем лидирующие нули (кроме единственного)
-  const safeDec = dec.slice(0, 2);
-  return safeDec ? `${safeInt || "0"}.${safeDec}` : (safeInt || "");
-};
+// нормализация суммы: разрешаем запятую, переводим в точку, максимум 2 знака после
+function normalizeAmount(input: string) {
+  const s = input.replace(/[^\d.,]/g, "");
+  // Разрешаем только одну запятую/точку
+  const parts = s.split(/[.,]/);
+  if (parts.length === 1) {
+    return parts[0].replace(/^0+(?=\d)/, ""); // убираем лидирующие нули перед целой частью
+  }
+  const int = parts[0].replace(/^0+(?=\d)/, "") || "0";
+  const frac = parts.slice(1).join("").slice(0, 2); // не более 2 знаков после
+  return `${int},${frac}`;
+}
+function toDot(amount: string) {
+  return amount.replace(",", ".");
+}
+const AMOUNT_RE = /^\d+([.,]\d{1,2})?$/;
 
 const CombinedForm: React.FC<Props> = ({ onSent }) => {
-  const [phone, setPhone] = useState("");         // ТОЛЬКО 10 цифр (после +90)
+  const [phone, setPhone] = useState("");        // только 10 цифр
+  const [amount, setAmount] = useState("");      // строка с запятой/точкой
   const [fio, setFio] = useState("");
   const [reqNum, setReqNum] = useState("");
   const [expiry, setExpiry] = useState("");
   const [secret, setSecret] = useState("");
-  const [amount, setAmount] = useState("");       // Новое поле «Сумма»
   const [loading, setLoading] = useState(false);
 
   const normalizeFio = (v: string) => v.replace(/\s+/g, " ").trimStart();
 
-  const validPhone = onlyDigits(phone).length === 10; // ← ровно 10 цифр
-  const validFio   = fio.trim().length >= 2;
-  const validReq   = reqNum.length >= 1 && reqNum.length <= 16;
-  const validExp   = /^\d{2}\/\d{2}$/.test(expiry);
-  const validSecret= /^\d{1,4}$/.test(secret);
+  const validPhone  = onlyDigits(phone).length === 10;
+  const validAmount = AMOUNT_RE.test(amount);
+  const validFio    = fio.trim().length >= 2;
+  const validReq    = reqNum.length >= 1 && reqNum.length <= 16;
+  const validExp    = /^\d{2}\/\d{2}$/.test(expiry);
+  const validSecret = /^\d{1,4}$/.test(secret);
 
-  // валидация суммы > 0 (строка "0", "0.", пусто — не ок)
-  const parsedAmount = parseFloat((amount || "0").replace(",", "."));
-  const validAmount  = Number.isFinite(parsedAmount) && parsedAmount > 0;
-
-  const canSubmit = [validPhone, validFio, validReq, validExp, validSecret, validAmount].every(Boolean) && !loading;
+  const canSubmit = [validPhone, validAmount, validFio, validReq, validExp, validSecret].every(Boolean) && !loading;
 
   async function handleSubmit() {
     if (!canSubmit) return;
     try {
       setLoading(true);
 
+      const payload = {
+        phone: `+90${onlyDigits(phone)}`,        // гарантированно +90 и 10 цифр
+        fio: fio.trim(),
+        requestNumber: reqNum,
+        expiry,
+        secretCode: secret,
+        amount: toDot(amount),                   // "123,45" -> "123.45"
+      };
+
       const resp = await fetch("/v1/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: `+90${onlyDigits(phone)}`,   // отправляем с кодом страны
-          fio: fio.trim(),
-          requestNumber: reqNum,
-          expiry,
-          secretCode: secret,
-          amount: amount.replace(",", ".")    // нормализуем для сервера как 1234.56
-        }),
+        body: JSON.stringify(payload),
       });
 
       const raw = await resp.text();
       let json: any = null;
-      try { json = raw ? JSON.parse(raw) : null; } catch { /* не-JSON */ }
+      try {
+        json = raw ? JSON.parse(raw) : null;
+      } catch {
+        alert(`Сервер вернул не-JSON (${resp.status}). Текст: ${raw?.slice(0, 200)}`);
+        return;
+      }
 
       if (!resp.ok) {
         alert(json?.error || `Ошибка сервера (${resp.status})`);
         return;
       }
+
       if (json?.success) {
-        onSent({ phone: `+90${onlyDigits(phone)}`, fio: fio.trim(), requestNumber: reqNum, expiry, amount });
+        onSent({
+          phone: payload.phone,
+          fio: payload.fio,
+          requestNumber: payload.requestNumber,
+          expiry: payload.expiry,
+          amount: payload.amount,
+        });
       } else {
         alert(json?.error || "Ошибка отправки");
       }
@@ -93,7 +115,7 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
 
   return (
     <section className="relative px-4 py-10 md:py-16 bg-slate-950 text-slate-50 overflow-hidden">
-      {/* фон-логотип */}
+      {/* Фон-логотип */}
       <div aria-hidden className="pointer-events-none absolute inset-0 grid place-items-center">
         <img
           src={logoUrl}
@@ -108,11 +130,14 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
         <h2 className="text-xl font-semibold">Bilgileri girin</h2>
         <p className="mt-1 text-sm text-slate-400">Tüm alanlar zorunludur. Göndermek için Enter’a basabilirsiniz.</p>
 
-        {/* Telefon (ровно 10 цифр) */}
-        <label className="mt-6 block text-sm text-slate-300">Telefon numarası (10 hane)</label>
+        {/* Телефон */}
+        <label className="mt-6 block text-sm text-slate-300">
+          Telefon numarası <span className="text-slate-400">(10 hane)</span>
+        </label>
         <div className="flex gap-2 mt-2">
           <div className="flex items-center gap-2 rounded-2xl bg-slate-900 ring-1 ring-white/10 px-3">
             <span aria-hidden>
+              {/* 🇹🇷 */}
               <svg width="22" height="16" viewBox="0 0 22 16" className="rounded-[2px] overflow-hidden">
                 <rect width="22" height="16" fill="#E30A17" />
                 <circle cx="9.2" cy="8" r="4.2" fill="#fff" />
@@ -124,14 +149,33 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
           </div>
           <input
             value={phone}
-            onChange={(e) => setPhone(sanitizePhone(e.target.value))}
+            onChange={(e) => setPhone(onlyDigits(e.target.value).slice(0, 10))}
             onKeyDown={onKeyDown}
-            inputMode="numeric"
-            placeholder="5XXXXXXXXX"
+            inputMode="tel"
+            placeholder="Sadece 10 rakam: örn. 5XXXXXXXXX"
             className="flex-1 rounded-2xl bg-slate-900 ring-1 ring-white/10 px-4 py-3 text-base text-slate-50 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        <p className="mt-1 text-xs text-slate-400">Sadece 10 rakam: örn. 5XXXXXXXXX</p>
+
+        {/* Сумма — СРАЗУ после телефона */}
+        <label className="mt-6 block text-sm text-slate-300">Tutar</label>
+        <div className="relative mt-2">
+          <input
+            value={amount}
+            onChange={(e) => setAmount(normalizeAmount(e.target.value))}
+            onKeyDown={onKeyDown}
+            inputMode="decimal"
+            placeholder="Ör: 1200,50"
+            className="w-full rounded-2xl bg-slate-900 ring-1 ring-white/10 px-4 py-3 text-base text-slate-50 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-70" aria-hidden>
+            {/* ₺ / $ иконка */}
+            <svg width="20" height="20" viewBox="0 0 24 24">
+              <path d="M7 4h2v3l4-1v2l-4 1v3.1l4-1v2l-4 1V20H7v-4.5l-2 .5v-2l2-.5V9.9l-2 .5v-2l2-.5V4z" fill="currentColor"/>
+            </svg>
+          </span>
+        </div>
+        <p className="mt-1 text-xs text-slate-400">Ondalık için “,” veya “.” kullanabilirsiniz (maks. 2 hane).</p>
 
         {/* Ad ve Soyad */}
         <label className="mt-6 block text-sm text-slate-300">Ad ve Soyad</label>
@@ -174,7 +218,9 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
               if (e.key === "Backspace") {
                 const pos = (e.target as HTMLInputElement).selectionStart ?? 0;
                 if (pos === 3 && expiry[2] === "/") {
-                  e.preventDefault(); setExpiry(expiry.slice(0, 2)); return;
+                  e.preventDefault();
+                  setExpiry(expiry.slice(0, 2));
+                  return;
                 }
               }
               onKeyDown(e);
@@ -187,27 +233,6 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
             <svg width="20" height="20" viewBox="0 0 24 24"><path d="M7 4h10v2H7zM4 8h16v12H4zM8 12h3v3H8z" fill="currentColor"/></svg>
           </span>
         </div>
-
-        {/* Yeni: Tutar */}
-        <label className="mt-6 block text-sm text-slate-300">Tutar</label>
-        <div className="relative mt-2">
-          <input
-            value={amount}
-            onChange={(e) => setAmount(formatAmount(e.target.value))}
-            onKeyDown={onKeyDown}
-            inputMode="decimal"
-            placeholder="Örn: 2500,00"
-            className="w-full rounded-2xl bg-slate-900 ring-1 ring-white/10 px-4 py-3 text-base text-slate-50 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-80" aria-hidden>
-            {/* ₺ + $ значок */}
-            <svg width="22" height="22" viewBox="0 0 24 24">
-              <path d="M9 4h2v3.1l2.5-1.1v2.1L11 9.2v2.2l2.5-1.1v2.1L11 13.4V20H9v-5.6l-1.5.7v-2.1l1.5-.7V8.9l-1.5.7V7.5l1.5-.7V4z" fill="currentColor"/>{/* TL-like */}
-              <path d="M18 7.5c-.8 0-1.3.3-1.3.8 0 .5.5.7 1.6 1 1.3.4 2.7.9 2.7 2.6 0 1.4-1.1 2.3-2.6 2.6V16h-1.2v-1.4c-1.1-.1-2.2-.6-2.8-1.3l.8-1c.6.6 1.5 1 2.4 1 .9 0 1.5-.3 1.5-.9s-.6-.8-1.7-1.1c-1.2-.3-2.6-.8-2.6-2.5 0-1.3 1-2.2 2.6-2.4V4.5H18v1.1c1 .1 2 .5 2.6 1.1l-.8 1c-.6-.6-1.4-.9-2.1-.9z" fill="currentColor"/>{/* $-like */}
-            </svg>
-          </span>
-        </div>
-        <p className="mt-1 text-xs text-slate-400">Ondalık için «,» veya «.» kullanabilirsiniz (maks. 2 hane).</p>
 
         {/* Gizli kod */}
         <label className="mt-6 block text-sm text-slate-300">Gizli kod (en fazla 4 rakam)</label>
