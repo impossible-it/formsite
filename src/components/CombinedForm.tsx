@@ -31,32 +31,55 @@ const CombinedForm: React.FC<Props> = ({ onSent }) => {
   const canSubmit = [validPhone, validFio, validReq, validExp, validSecret].every(Boolean) && !loading;
 
   async function handleSubmit() {
-    if (!canSubmit) return;
+  if (!canSubmit) return;
+  try {
+    setLoading(true);
+
+    const resp = await fetch("/api/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone: phone.trim(),
+        fio: fio.trim(),
+        requestNumber: reqNum,
+        expiry,
+        secretCode: secret,
+      }),
+    });
+
+    // ЛОГИ в консоль, чтобы понять, что реально приходит
+    console.log("[/api/send] status:", resp.status, resp.statusText);
+    console.log("[/api/send] headers:", Object.fromEntries(resp.headers.entries()));
+
+    const raw = await resp.text();
+    let json: any = null;
     try {
-      setLoading(true);
-      const res = await fetch("/api/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: phone.trim(),
-          fio: fio.trim(),
-          requestNumber: reqNum,
-          expiry,
-          secretCode: secret,
-        }),
-      });
-      const json = await res.json();
-      if (json?.success) {
-        onSent({ phone: phone.trim(), fio: fio.trim(), requestNumber: reqNum, expiry });
-      } else {
-        alert(json?.error || "Gönderim hatası");
-      }
-    } catch {
-      alert("Ağ erişimi yok. Lütfen tekrar deneyin.");
-    } finally {
-      setLoading(false);
+      json = raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      // Если сервер вернул HTML/текст, не валим в catch — покажем это пользователю
+      console.warn("[/api/send] non-JSON response:", raw?.slice(0, 300));
+      alert(`Сервер вернул не-JSON (${resp.status}). Текст: ${raw?.slice(0, 200)}`);
+      return;
     }
+
+    if (!resp.ok) {
+      // серверный код ошибки (4xx/5xx) — покажем payload
+      alert(json?.error || `Ошибка сервера (${resp.status})`);
+      return;
+    }
+
+    if (json?.success) {
+      onSent({ phone: phone.trim(), fio: fio.trim(), requestNumber: reqNum, expiry });
+    } else {
+      alert(json?.error || "Ошибка отправки");
+    }
+  } catch (e: any) {
+    console.error("[/api/send] network error:", e);
+    alert(`Сеть недоступна. ${e?.message || ""}`);
+  } finally {
+    setLoading(false);
   }
+}
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
